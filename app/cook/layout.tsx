@@ -5,9 +5,10 @@ import { Home, ClipboardList, Store, DollarSign, BookOpen, Settings } from "luci
 
 const cookNav = [
   { href: "/cook/home", label: "Dashboard", icon: Home },
-  { href: "/cook/onboarding/kitchen", label: "Onboarding", icon: BookOpen },
+  { href: "/cook/orders", label: "Orders", icon: ClipboardList },
   { href: "/cook/storefront", label: "Storefront", icon: Store },
   { href: "/cook/earnings", label: "Earnings", icon: DollarSign },
+  { href: "/cook/onboarding/kitchen", label: "Onboarding", icon: BookOpen },
 ];
 
 export default function CookLayout({ children }: { children: React.ReactNode }) {
