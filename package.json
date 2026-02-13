@@ -4,8 +4,10 @@
   "description": "ChefPack Microservices Backend",
   "main": "services/api-gateway/index.js",
   "scripts": {
-    "start": "node services/api-gateway/index.js",
-    "dev": "nodemon services/api-gateway/index.js",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "dev:gateway": "nodemon services/api-gateway/index.js",
     "dev:auth": "nodemon services/auth/index.js",
     "dev:users": "nodemon services/users/index.js",
     "dev:cooks": "nodemon services/cooks/index.js",
@@ -54,15 +56,20 @@
     "next": "^16.1.6",
     "nodemailer": "^8.0.0",
     "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "stripe": "^14.9.0",
     "uuid": "^9.0.1",
     "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "prisma": "^5.22.0",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "typescript": "^5.0.0"
   }
 }
