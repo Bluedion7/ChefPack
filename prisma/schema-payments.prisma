@@ -1,0 +1,152 @@
+// Payments & Payouts Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-payments"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_PAYMENTS_URL")
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  orderId         String         @unique
+  customerId      String
+  amount          Float
+  currency        String         @default("USD")
+  status          PaymentStatus  @default(PENDING)
+  method          PaymentMethod
+  provider        String         @default("stripe")
+  providerTxnId   String?        @unique
+  providerData    Json?
+  failureReason   String?
+  refundAmount    Float          @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  completedAt     DateTime?
+  
+  // Relations
+  refunds         Refund[]
+  
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@index([providerTxnId])
+}
+
+model Refund {
+  id              String       @id @default(uuid())
+  paymentId       String
+  amount          Float
+  reason          String
+  status          RefundStatus @default(PENDING)
+  providerRefundId String?     @unique
+  processedBy     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  completedAt     DateTime?
+  
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  
+  @@index([paymentId])
+  @@index([status])
+}
+
+model Payout {
+  id              String       @id @default(uuid())
+  cookId          String
+  amount          Float
+  currency        String       @default("USD")
+  status          PayoutStatus @default(PENDING)
+  method          String       @default("bank_transfer")
+  bankAccount     Json
+  providerTxnId   String?      @unique
+  providerData    Json?
+  failureReason   String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  ordersCount     Int
+  commission      Float
+  netAmount       Float
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  processedAt     DateTime?
+  
+  // Relations
+  earnings        Earning[]
+  
+  @@index([cookId])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+}
+
+model Earning {
+  id          String   @id @default(uuid())
+  payoutId    String?
+  cookId      String
+  orderId     String   @unique
+  amount      Float
+  commission  Float
+  netAmount   Float
+  status      String   @default("pending")
+  earnedAt    DateTime @default(now())
+  
+  payout Payout? @relation(fields: [payoutId], references: [id])
+  
+  @@index([payoutId])
+  @@index([cookId])
+  @@index([orderId])
+  @@index([status])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  type        String   // payment, refund, payout
+  entityId    String   // payment/refund/payout ID
+  amount      Float
+  currency    String   @default("USD")
+  status      String
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  
+  @@index([type])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  WALLET
+  CASH
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+

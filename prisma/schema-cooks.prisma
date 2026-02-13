@@ -1,0 +1,140 @@
+// Cooks, Menu & Plans Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-cooks"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_COOKS_URL")
+}
+
+model Cook {
+  id              String      @id @default(uuid())
+  userId          String      @unique
+  businessName    String
+  bio             String?
+  specialties     String[]
+  certifications  String[]
+  rating          Float       @default(0)
+  totalOrders     Int         @default(0)
+  status          CookStatus  @default(PENDING)
+  verified        Boolean     @default(false)
+  verifiedAt      DateTime?
+  documents       Json?
+  bankAccount     Json?
+
+  // Kitchen verification fields
+  kitchenVerified Boolean     @default(false)
+  kitchenAddress  Json?       // { street, city, state, zipCode, latitude, longitude }
+  kitchenDocs     Json?       // { healthPermit, insuranceCert, photos: [] }
+  kitchenVerifiedAt DateTime?
+  kitchenRejectedReason String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  availability    Availability[]
+  meals           Meal[]
+  pricing         Pricing?
+
+  @@index([userId])
+  @@index([status])
+  @@index([verified])
+  @@index([kitchenVerified])
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  cookId    String
+  dayOfWeek Int      // 0-6 (Sunday-Saturday)
+  startTime String   // HH:mm format
+  endTime   String   // HH:mm format
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  
+  @@index([cookId])
+  @@index([dayOfWeek])
+}
+
+model Pricing {
+  id              String   @id @default(uuid())
+  cookId          String   @unique
+  basePrice       Float
+  perMealPrice    Float
+  deliveryFee     Float
+  minimumOrder    Float
+  currency        String   @default("USD")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+}
+
+model Meal {
+  id              String       @id @default(uuid())
+  cookId          String
+  name            String
+  description     String
+  images          String[]
+  price           Float
+  prepTime        Int          // minutes
+  servings        Int
+  cuisine         String
+  dietaryTags     String[]     // vegetarian, vegan, gluten-free, etc.
+  allergens       String[]
+  ingredients     String[]
+  nutritionInfo   Json?
+  isAvailable     Boolean      @default(true)
+  status          MealStatus   @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  
+  @@index([cookId])
+  @@index([cuisine])
+  @@index([isAvailable])
+}
+
+model Plan {
+  id              String     @id @default(uuid())
+  name            String
+  description     String
+  price           Float
+  duration        Int        // days
+  mealsPerWeek    Int
+  features        String[]
+  isActive        Boolean    @default(true)
+  tier            PlanTier
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  @@index([tier])
+  @@index([isActive])
+}
+
+enum CookStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum MealStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+}
+
+enum PlanTier {
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+

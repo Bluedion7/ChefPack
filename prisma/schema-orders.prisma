@@ -1,0 +1,173 @@
+// Orders Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-orders"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_ORDERS_URL")
+}
+
+model Order {
+  id                  String        @id @default(uuid())
+  orderNumber         String        @unique
+  customerId          String
+  cookId              String?
+  status              OrderStatus   @default(PENDING)
+  totalAmount         Float
+  deliveryFee         Float
+  tax                 Float
+  discount            Float         @default(0)
+  finalAmount         Float
+  deliveryAddress     Json
+  deliveryDate        DateTime
+  deliveryTime        String
+  specialInstructions String?
+  slaDeadline         DateTime
+  preferenceSnapshot  Json?         // Snapshot of user preferences at order time
+  overrideAccepted    Boolean       @default(false) // User accepted allergen/diet warning
+  kitchenPickupSnapshot Json?       // Snapshot of cook's kitchen address for pickup
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+
+  // Relations
+  items           OrderItem[]
+  tracking        OrderTracking[]
+  ratings         Rating[]
+  support         SupportTicket[]
+
+  @@index([customerId])
+  @@index([cookId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([deliveryDate])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  mealId      String
+  mealName    String
+  quantity    Int
+  price       Float
+  subtotal    Float
+  createdAt   DateTime @default(now())
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([mealId])
+}
+
+model OrderTracking {
+  id          String   @id @default(uuid())
+  orderId     String
+  status      String
+  message     String
+  location    Json?
+  timestamp   DateTime @default(now())
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+}
+
+model Ingredient {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  category        String
+  unit            String
+  substitutes     String[]
+  allergens       String[]
+  isCommon        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([category])
+  @@index([name])
+}
+
+model Rating {
+  id          String   @id @default(uuid())
+  orderId     String
+  customerId  String
+  cookId      String
+  rating      Int      // 1-5
+  review      String?
+  images      String[]
+  response    String?
+  respondedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([customerId])
+  @@index([cookId])
+  @@index([rating])
+}
+
+model SupportTicket {
+  id          String        @id @default(uuid())
+  orderId     String?
+  customerId  String
+  subject     String
+  description String
+  category    TicketCategory
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(OPEN)
+  assignedTo  String?
+  resolution  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  resolvedAt  DateTime?
+  
+  order Order? @relation(fields: [orderId], references: [id])
+  
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@index([category])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  PREPARING
+  READY
+  IN_TRANSIT
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum TicketCategory {
+  ORDER_ISSUE
+  DELIVERY_ISSUE
+  QUALITY_ISSUE
+  PAYMENT_ISSUE
+  ACCOUNT_ISSUE
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+

@@ -1,0 +1,16 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY shared ./shared
+COPY services/auth ./services/auth
+
+WORKDIR /app/services/auth
+
+EXPOSE 3001
+
+CMD ["node", "index.js"]
+

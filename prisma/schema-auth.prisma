@@ -1,0 +1,122 @@
+// Auth & Users Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-auth"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_AUTH_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  phone         String    @unique
+  email         String?   @unique
+  firstName     String?
+  lastName      String?
+  role          UserRole  @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean   @default(false)
+  phoneVerified Boolean   @default(true)
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  addresses     Address[]
+  sessions      Session[]
+  preference    UserPreference?
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  label       String   // Home, Work, etc.
+  street      String
+  city        String
+  state       String
+  zipCode     String
+  country     String   @default("US")
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  
+  @@index([phone])
+  @@index([expiresAt])
+}
+
+enum UserRole {
+  CUSTOMER
+  COOK
+  ADMIN
+  SUPPORT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model UserPreference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  dietTags            String[] // keto, pescatarian, vegan, vegetarian, gluten_free_pref, halal_pref, low_sodium_pref
+  allergens           String[] // peanuts, tree_nuts, shellfish, fish, dairy, eggs, wheat_gluten, soy, sesame, other
+  allergenOtherText   String?
+  allergenSeverity    AllergenSeverity
+  avoidCrossContact   Boolean  @default(false)
+  spiceLevel          Int      @default(1) // 0-3
+  tasteLikes          String[]
+  tasteDislikes       String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum AllergenSeverity {
+  mild
+  severe
+}
+
